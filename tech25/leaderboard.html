@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Leaderboard - Pink Panthress Adventures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Nerko+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="game-body">
+  <h1>🏆 Fastest Heist Agents 🏆</h1>
+  <table style="margin:auto; border-collapse:collapse; width:70%; text-align:center;">
+    <thead>
+      <tr style="background-color:#e60073;">
+        <th style="padding:10px;">Rank</th>
+        <th style="padding:10px;">Agent UID</th>
+        <th style="padding:10px;">Time (seconds)</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboard-body"></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get, query, orderByChild, limitToFirst } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjJH-gJjPcZeS1Ph-JL15_aN3cq5Ecr5Q",
+      authDomain: "pinkpanther-27795.firebaseapp.com",
+      databaseURL: "https://pinkpanther-27795-default-rtdb.firebaseio.com",
+      projectId: "pinkpanther-27795",
+      storageBucket: "pinkpanther-27795.appspot.com",
+      messagingSenderId: "950188314786",
+      appId: "1:950188314786:web:1be4f4c1e9ed874567c7fb"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const leaderboardRef = query(ref(db, "completionTimes"), orderByChild("time"), limitToFirst(10));
+    const tbody = document.getElementById("leaderboard-body");
+
+get(leaderboardRef).then(snapshot => {
+  if (snapshot.exists()) {
+    let data = [];
+
+    snapshot.forEach(childSnap => {
+      const val = childSnap.val();
+
+      // If it's a flat entry (old style)
+      if (val.time !== undefined) {
+        data.push(val);
+      } 
+      // If it's nested (new style)
+      else {
+        Object.values(val).forEach(innerVal => {
+          data.push(innerVal);
+        });
+      }
+    });
+
+    // Sort by time
+    data.sort((a, b) => (a.time || Infinity) - (b.time || Infinity));
+
+    // Build table
+    data.forEach((entry, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td style="padding:10px;">${index + 1}</td>
+        <td style="padding:10px;">${entry.username || entry.uid || "Anonymous"}</td>
+        <td style="padding:10px;">${typeof entry.time === "number" ? entry.time.toFixed(2) : "N/A"}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } else {
+    tbody.innerHTML = `<tr><td colspan="3">No scores yet</td></tr>`;
+  }
+});
+
+
+  </script>
+</body>
+</html>
