@@ -68,3 +68,16 @@ h2 {
   height: auto; /* maintain proportions */
   padding-left: 33.6%;
 }
+.section {
+  background: #222;
+  border-radius: 12px;
+  padding: 15px;
+  margin: 15px auto;
+  max-width: 600px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  text-align: left;
+}
+.section p {
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
