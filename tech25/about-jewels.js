@@ -104,7 +104,30 @@ window.chooseCountry = (country) => {
 function showResult(jewels) {
     const jewelName = Object.keys(jewels)[0];
     const jewelData = jewels[jewelName];
-    alert(`Jewel: ${jewelName}
-Material: ${jewelData.material}
-Taken By: ${jewelData.takenBy}`);
+
+    // Build a nice display of jewel data
+    const resultHTML = `
+        <p><strong>Jewel:</strong> ${jewelName}</p>
+        <p><strong>Material:</strong> ${jewelData.material}</p>
+        <p><strong>Taken By:</strong> ${jewelData.takenBy}</p>
+    `;
+
+    // Insert into result box
+    resultText.innerHTML = resultHTML;
+    result.style.display = "block";
 }
+
+// Restart button handler
+document.getElementById("restartBtn").onclick = () => {
+    // Hide result
+    result.style.display = "none";
+
+    // Reset selections
+    selection.startType = null;
+    selection.category = null;
+    selection.period = null;
+    selection.country = null;
+
+    // Show start choice again
+    startChoice.style.display = "block";
+};
