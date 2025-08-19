@@ -52,19 +52,19 @@ function renderChoices(obj) {
         // Array of facts or items
         obj.forEach(item => {
             if (typeof item === "string") {
-                // For trivia strings
                 const sectionDiv = document.createElement("div");
                 sectionDiv.classList.add("section");
                 sectionDiv.innerHTML = `<p>${item}</p>`;
                 contentDiv.appendChild(sectionDiv);
             } else if (item.name || item.title) {
-                // For notable heists, documentaries, etc.
                 const btn = document.createElement("button");
-                btn.classList.add("quiz-option");
-                btn.textContent = item.name || item.title;
+                btn.classList.add("game-btn");
+                // Fix labels with proper spacing
+                btn.textContent = (item.name || item.title)
+                                  .replace(/([a-z])([A-Z])/g, '$1 $2'); 
                 btn.onclick = () => {
                     currentPath.push(btn.textContent);
-                    showDetails(item); // NEW: show all details immediately
+                    showDetails(item);
                 };
                 contentDiv.appendChild(btn);
             }
@@ -76,8 +76,9 @@ function renderChoices(obj) {
     // Object with keys → show them as buttons
     Object.keys(obj).forEach(key => {
         const btn = document.createElement("button");
-        btn.classList.add("quiz-option");
-        btn.textContent = key;
+        btn.classList.add("game-btn");
+        // Fix labels with proper spacing
+        btn.textContent = key.replace(/([a-z])([A-Z])/g, '$1 $2');
         btn.onclick = () => {
             currentPath.push(key);
             renderChoices(obj[key]);
@@ -90,7 +91,7 @@ function renderChoices(obj) {
     }
 }
 
-// NEW: Show all details for an object in a user-friendly block
+// Show all details for an object in a user-friendly block
 function showDetails(item) {
     const contentDiv = document.getElementById("content");
     contentDiv.innerHTML = "";
@@ -106,13 +107,12 @@ function showDetails(item) {
     addBackButton();
 }
 
-
 // Back button
 function addBackButton() {
     const contentDiv = document.getElementById("content");
     const backBtn = document.createElement("button");
     backBtn.textContent = "⬅ Back";
-    backBtn.classList.add("quiz-option");
+    backBtn.classList.add("game-btn");
     backBtn.style.backgroundColor = "#999";
     backBtn.onclick = () => {
         currentPath.pop();
