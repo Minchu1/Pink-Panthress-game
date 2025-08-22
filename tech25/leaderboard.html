@@ -4,26 +4,51 @@
   <meta charset="UTF-8">
   <title>Leaderboard - Pink Panthress Adventures</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Nerko+One&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 8px;
+      vertical-align: middle;
+      border: 2px solid #e60073;
+    }
+    .agent-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+  </style>
 </head>
 <body class="game-body">
+
   <h1>🏆 Fastest Heist Agents 🏆</h1>
+
+  <!-- Leaderboard table -->
   <table style="margin:auto; border-collapse:collapse; width:70%; text-align:center;">
     <thead>
       <tr style="background-color:#e60073;">
         <th style="padding:10px;">Rank</th>
-        <th style="padding:10px;">Agent UID</th>
-        <th style="padding:10px;">Time (seconds)</th>
+        <th style="padding:10px;">Agent</th>
+        <th style="padding:10px;">Time (s)</th>
       </tr>
     </thead>
     <tbody id="leaderboard-body"></tbody>
   </table>
 
   <script type="module">
+    // --- Firebase imports ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, get, query, orderByChild, limitToFirst } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, get, query, orderByChild, limitToFirst } 
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+    // --- Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyAjJH-gJjPcZeS1Ph-JL15_aN3cq5Ecr5Q",
       authDomain: "pinkpanther-27795.firebaseapp.com",
@@ -34,51 +59,81 @@
       appId: "1:950188314786:web:1be4f4c1e9ed874567c7fb"
     };
 
+    // Init app + db
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const leaderboardRef = query(ref(db, "completionTimes"), orderByChild("time"), limitToFirst(10));
-    const tbody = document.getElementById("leaderboard-body");
+    // Reference top 10 scores (by fastest time)
+    const leaderboardQuery = query(
+      ref(db, "completionTimes"),
+      orderByChild("time"),
+      limitToFirst(10)
+    );
 
-get(leaderboardRef).then(snapshot => {
-  if (snapshot.exists()) {
-    let data = [];
+    const tableBody = document.getElementById("leaderboard-body");
 
-    snapshot.forEach(childSnap => {
-      const val = childSnap.val();
-
-      // If it's a flat entry (old style)
-      if (val.time !== undefined) {
-        data.push(val);
-      } 
-      // If it's nested (new style)
-      else {
-        Object.values(val).forEach(innerVal => {
-          data.push(innerVal);
-        });
+    async function fetchProfilePic(uid) {
+      try {
+        const snap = await get(ref(db, `publicProfiles/${uid}/profilePic`));
+        if (snap.exists()) {
+          return snap.val();
+        }
+      } catch (err) {
+        console.warn("No profile picture for uid:", uid);
       }
+      return "https://images.seeklogo.com/logo-png/10/1/pink-panther-logo-png_seeklogo-109024.png"; // fallback
+    }
+
+    // Fetch leaderboard
+    get(leaderboardQuery).then(async snapshot => {
+      if (!snapshot.exists()) {
+        tableBody.innerHTML = `<tr><td colspan="3">No scores yet</td></tr>`;
+        return;
+      }
+
+      let results = [];
+
+      // Handle both "flat" and "nested" score entries
+      snapshot.forEach(childSnap => {
+        const entry = childSnap.val();
+        const uid = childSnap.key; // might be useful if uid is key
+
+        if (entry.time !== undefined) {
+          results.push({ ...entry, uid });
+        } else {
+          Object.entries(entry).forEach(([subKey, inner]) => {
+            results.push({ ...inner, uid: inner.uid || uid });
+          });
+        }
+      });
+
+      // Sort by best (lowest) time
+      results.sort((a, b) => (a.time || Infinity) - (b.time || Infinity));
+
+      // Render rows
+      for (let i = 0; i < results.length; i++) {
+        const player = results[i];
+        const row = document.createElement("tr");
+
+        const picUrl = await fetchProfilePic(player.uid);
+
+        row.innerHTML = `
+          <td style="padding:10px;">${i + 1}</td>
+          <td style="padding:10px;" class="agent-cell">
+            <img class="avatar" src="${picUrl}" alt="avatar">
+            ${player.username || "Anonymous"}
+          </td>
+          <td style="padding:10px;">${typeof player.time === "number" ? player.time.toFixed(2) : "N/A"}</td>
+        `;
+
+        tableBody.appendChild(row);
+      }
+    }).catch(err => {
+      console.error("Error loading leaderboard:", err);
+      tableBody.innerHTML = `<tr><td colspan="3">⚠️ Error loading data</td></tr>`;
     });
-
-    // Sort by time
-    data.sort((a, b) => (a.time || Infinity) - (b.time || Infinity));
-
-    // Build table
-    data.forEach((entry, index) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td style="padding:10px;">${index + 1}</td>
-        <td style="padding:10px;">${entry.username || entry.uid || "Anonymous"}</td>
-        <td style="padding:10px;">${typeof entry.time === "number" ? entry.time.toFixed(2) : "N/A"}</td>
-      `;
-      tbody.appendChild(row);
-    });
-  } else {
-    tbody.innerHTML = `<tr><td colspan="3">No scores yet</td></tr>`;
-  }
-});
-
-
   </script>
+
 </body>
 </html>
 
